@@ -1,0 +1,35 @@
+{
+  "suggested_urls": [
+    "https://fastapi.tiangolo.com/",
+    "https://docs.pydantic.dev/latest/",
+    "https://react.dev/learn",
+    "https://tailwindcss.com/docs/utility-first"
+  ],
+  "example_queries": [
+    {
+      "query": "What is FastAPI and what problem does it solve?",
+      "expected_keywords": ["framework", "API", "Python", "type hints"],
+      "must_cite": true
+    },
+    {
+      "query": "How do I define a Pydantic model with a required field?",
+      "expected_keywords": ["BaseModel", "required"],
+      "must_cite": true
+    },
+    {
+      "query": "What is the difference between a component and a hook in React?",
+      "expected_keywords": ["component", "hook", "state"],
+      "must_cite": true
+    },
+    {
+      "query": "When should I not use Tailwind's @apply directive?",
+      "expected_keywords": ["@apply", "utility"],
+      "must_cite": true
+    },
+    {
+      "query": "What is the capital of Iceland?",
+      "expected_fallback": "I don't have enough information",
+      "must_cite": false
+    }
+  ]
+}

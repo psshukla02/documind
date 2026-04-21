@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DocuMind — AI Technical Documentation Assistant</title>
+    <meta
+      name="description"
+      content="A RAG-powered technical documentation assistant with synthetic data generation and structured prompt engineering."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #0f172a;
+        --border: #1e293b;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --brand: #3b82f6;
+        --brand-dim: #60a5fa;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.55;
+      }
+      a { color: var(--brand-dim); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; }
+      pre {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        padding: 14px 18px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 13px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 18px 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(6px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .wrap { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+      nav { display: flex; align-items: center; justify-content: space-between; }
+      nav .brand { font-weight: 700; color: var(--brand-dim); font-size: 20px; }
+      nav ul { list-style: none; display: flex; gap: 22px; padding: 0; margin: 0; }
+      nav ul a { color: var(--muted); font-size: 14px; }
+      nav ul a:hover { color: var(--text); }
+
+      .hero {
+        padding: 80px 0 60px;
+        text-align: center;
+      }
+      .hero h1 {
+        font-size: 52px;
+        margin: 0 0 14px;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+      .hero .tag {
+        display: inline-block;
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--brand-dim);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        margin-bottom: 18px;
+      }
+      .hero p.lead {
+        color: var(--muted);
+        font-size: 18px;
+        max-width: 720px;
+        margin: 0 auto 32px;
+      }
+      .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        border: 1px solid var(--border);
+      }
+      .btn-primary { background: var(--brand); color: white; border-color: var(--brand); }
+      .btn-primary:hover { background: #2563eb; text-decoration: none; }
+      .btn-ghost { background: transparent; color: var(--text); }
+      .btn-ghost:hover { background: var(--panel); text-decoration: none; }
+
+      section { padding: 60px 0; border-top: 1px solid var(--border); }
+      section h2 {
+        font-size: 30px;
+        margin: 0 0 28px;
+        letter-spacing: -0.01em;
+      }
+      section p { color: var(--muted); }
+
+      .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+      .feature {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 22px;
+      }
+      .feature h3 {
+        margin: 0 0 8px;
+        font-size: 17px;
+        color: var(--brand-dim);
+      }
+      .feature p { margin: 0; font-size: 14px; }
+
+      .demo {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: center;
+      }
+      .demo .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 22px;
+      }
+      @media (max-width: 800px) {
+        .demo { grid-template-columns: 1fr; }
+        .hero h1 { font-size: 38px; }
+      }
+
+      footer {
+        padding: 40px 0;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+        text-align: center;
+      }
+
+      .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .chip {
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.1);
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <div class="brand">DocuMind</div>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#demo">Demo</a></li>
+            <li><a href="#stack">Stack</a></li>
+            <li><a href="https://github.com/psshukla02/documind">GitHub ↗</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" style="border-top: none;">
+        <div class="wrap">
+          <span class="tag">Generative AI · Final Project</span>
+          <h1>The AI documentation<br/>assistant that cites its sources.</h1>
+          <p class="lead">
+            DocuMind combines RAG, synthetic data generation, and structured
+            prompt engineering into a single web app for developers. Ingest
+            any documentation site, ask grounded technical questions, and
+            generate polished Markdown docs — with inline citations and
+            live confidence scoring.
+          </p>
+          <div class="btns">
+            <a class="btn btn-primary" href="https://github.com/psshukla02/documind">
+              View on GitHub
+            </a>
+            <a class="btn btn-ghost" href="#demo">See Demo</a>
+          </div>
+          <div class="tag-list" style="justify-content:center; margin-top: 28px;">
+            <span class="chip">FastAPI</span>
+            <span class="chip">React · Tailwind</span>
+            <span class="chip">OpenAI</span>
+            <span class="chip">FAISS</span>
+            <span class="chip">Prompt Engineering</span>
+            <span class="chip">RAG</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="wrap">
+          <h2>Features</h2>
+          <div class="features">
+            <div class="feature">
+              <h3>📚 RAG pipeline</h3>
+              <p>Scrape → chunk → embed → store (FAISS) → retrieve → generate. Sources cited inline.</p>
+            </div>
+            <div class="feature">
+              <h3>💬 Chat with citations</h3>
+              <p>Every answer carries [S#] markers that link to the source document — no hidden claims.</p>
+            </div>
+            <div class="feature">
+              <h3>📝 Documentation generator</h3>
+              <p>Produce structured Markdown docs from a topic or a code snippet, optionally grounded in your KB.</p>
+            </div>
+            <div class="feature">
+              <h3>🧪 Synthetic data</h3>
+              <p>Generate diverse Q&amp;A pairs (factual, reasoning, edge-case, example) with a strict JSON contract.</p>
+            </div>
+            <div class="feature">
+              <h3>🧠 Prompt engineering</h3>
+              <p>Role separation, instruction hierarchy, edge-case handling, explicit output contracts.</p>
+            </div>
+            <div class="feature">
+              <h3>📈 Live metrics</h3>
+              <p>Latency, retrieval score, token usage, and a rolling event log — refreshed every 5 seconds.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="demo">
+        <div class="wrap">
+          <h2>Demo</h2>
+          <div class="demo">
+            <div>
+              <p>
+                Run it locally in two commands. Vite dev server proxies to
+                FastAPI, so the frontend makes same-origin requests.
+                No API key? DocuMind ships a <strong>stub mode</strong> so
+                every UI flow still works offline.
+              </p>
+              <p>
+                Try ingesting <code>https://fastapi.tiangolo.com/</code>,
+                then ask <em>"What is FastAPI and how does it use
+                Pydantic?"</em> — you'll see the answer, the citation
+                pills, and a confidence bar in the UI.
+              </p>
+            </div>
+            <div class="panel">
+              <pre><code># backend
+cd backend
+cp .env.example .env
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# frontend (in another terminal)
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="stack">
+        <div class="wrap">
+          <h2>Tech Stack</h2>
+          <div class="features">
+            <div class="feature">
+              <h3>Backend</h3>
+              <p>FastAPI · Uvicorn · Pydantic v2 · OpenAI SDK · FAISS · BeautifulSoup · Tenacity</p>
+            </div>
+            <div class="feature">
+              <h3>Frontend</h3>
+              <p>React 18 · Vite · React Router · Tailwind CSS · react-markdown · remark-gfm</p>
+            </div>
+            <div class="feature">
+              <h3>AI</h3>
+              <p>gpt-4o-mini (chat) · text-embedding-3-small (dense retrieval) · cosine via L2-normalized IP</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div>Built as a Generative AI final project. MIT-licensed.</div>
+        <div style="margin-top:6px;">
+          <a href="https://github.com/psshukla02/documind">GitHub</a>
+          · <a href="../README.md">README</a>
+          · <a href="../docs/architecture.md">Architecture</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

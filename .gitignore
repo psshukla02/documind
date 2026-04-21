@@ -1,0 +1,28 @@
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Data (runtime artifacts)
+data/vector_store/
+
+# Editor + OS
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+*.pyc
+.pytest_cache/
+
+# PDF build workspace (intermediate merge file)
+build/
+
+# Claude config
+.claude/
