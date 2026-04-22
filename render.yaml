@@ -20,12 +20,25 @@ services:
     region: oregon          # closest US region; adjust if you prefer
     plan: free
     rootDir: backend
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    # Playwright step downloads Chromium (~170 MB) into
+    # $PLAYWRIGHT_BROWSERS_PATH so the runtime can use it. Render's
+    # stock Python image ships most required system libs; if Chromium
+    # refuses to launch, check the log for missing .so errors and add
+    # `playwright install-deps chromium` (may need a Docker deploy).
+    buildCommand: >
+      pip install --upgrade pip &&
+      pip install -r requirements.txt &&
+      python -m playwright install chromium
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        # Install browsers under the persistent build-cache path so the
+        # Chromium download survives between deploys (cuts build time by
+        # ~1 min after the first install).
+        value: /opt/render/project/.cache/ms-playwright
       - key: OPENAI_API_KEY
         sync: false          # user sets this in the Render dashboard
       - key: OPENAI_CHAT_MODEL

@@ -37,6 +37,16 @@ app.include_router(synthetic.router, prefix="/api")
 app.include_router(agent.router, prefix="/api")
 
 
+@app.on_event("shutdown")
+def _close_playwright() -> None:
+    """Close the headless Chromium used by the search agent."""
+    try:
+        from app.services.search import shutdown_playwright
+        shutdown_playwright()
+    except Exception as e:
+        logger.warning("Playwright shutdown: %s", e)
+
+
 @app.get("/")
 def root() -> dict:
     return {
