@@ -72,9 +72,11 @@ export default function Hero() {
           <Link
             to="/chat"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full
-                       text-white text-sm font-semibold
-                       bg-brand-600 hover:bg-brand-700
-                       shadow-lift transition-colors"
+                       text-white text-sm font-semibold shadow-lift
+                       transition-transform hover:-translate-y-0.5"
+            style={{ backgroundColor: "#2563eb" }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
           >
             Start Chatting
             <span aria-hidden>→</span>

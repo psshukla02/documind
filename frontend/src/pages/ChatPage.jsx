@@ -36,9 +36,10 @@ function UserBubble({ text }) {
       animate={{ opacity: 1, y: 0 }}
       className="flex justify-end"
     >
-      <div className="max-w-2xl rounded-3xl rounded-br-lg px-5 py-3 text-[15px]
-                      bg-gradient-to-b from-brand-500 to-brand-600 text-white
-                      shadow-soft">
+      <div
+        className="max-w-2xl rounded-3xl rounded-br-lg px-5 py-3 text-[15px] text-white font-medium shadow-lift"
+        style={{ backgroundColor: "#2563eb" }}
+      >
         {text}
       </div>
     </motion.div>

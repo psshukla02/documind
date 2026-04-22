@@ -2,17 +2,15 @@ import { motion } from "framer-motion";
 
 const VARIANTS = {
   primary:
-    "bg-gradient-to-b from-brand-500 to-brand-600 text-white " +
-    "hover:from-brand-400 hover:to-brand-500 shadow-soft",
+    "bg-brand-600 text-white hover:bg-brand-700 shadow-lift",
   ghost:
-    "bg-white/60 text-ink-900 border border-ink-100 " +
-    "hover:bg-white hover:border-ink-200 backdrop-blur-xs",
+    "bg-white text-ink-900 border border-ink-200 " +
+    "hover:border-brand-300 hover:text-brand-700 shadow-soft",
   soft:
-    "bg-brand-50 text-brand-700 border border-brand-100 " +
+    "bg-brand-50 text-brand-700 border border-brand-200 " +
     "hover:bg-brand-100",
   danger:
-    "bg-gradient-to-b from-rose-500 to-rose-600 text-white " +
-    "hover:from-rose-400 hover:to-rose-500 shadow-soft",
+    "bg-rose-600 text-white hover:bg-rose-700 shadow-lift",
 };
 
 const SIZES = {

@@ -27,7 +27,10 @@ function Sidebar({ health }) {
       <div className="glass rounded-2xl h-full flex flex-col shadow-card overflow-hidden">
         <div className="px-5 pt-6 pb-5 border-b border-ink-100/80">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-400 to-lavender-500 shadow-soft" />
+            <div
+              className="w-7 h-7 rounded-lg shadow-soft"
+              style={{ backgroundImage: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)" }}
+            />
             <div className="text-lg font-semibold tracking-tight text-ink-900">
               DocuMind
             </div>
