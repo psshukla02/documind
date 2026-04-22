@@ -9,10 +9,7 @@
 
 html, body, #root { height: 100%; }
 body {
-  background:
-    radial-gradient(1200px 600px at -10% -20%, rgba(196,181,253,0.18), transparent 60%),
-    radial-gradient(900px 500px at 110% -10%, rgba(122,167,255,0.18), transparent 60%),
-    var(--canvas);
+  background: var(--canvas);
   color: #1d1d1f;
   font-feature-settings: "ss01", "cv02", "cv11";
   -webkit-font-smoothing: antialiased;

@@ -4,27 +4,25 @@ import { Link } from "react-router-dom";
 export default function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* soft gradient blobs */}
+      {/* Subtle backdrop blobs, pushed to the edges so they don't sit behind CTAs. */}
       <div
-        className="absolute -top-40 -left-20 w-[520px] h-[520px] rounded-full blur-3xl opacity-60 pointer-events-none"
+        aria-hidden
+        className="absolute -top-32 -left-24 w-[420px] h-[420px] rounded-full blur-3xl opacity-40 pointer-events-none"
         style={{ background: "radial-gradient(closest-side, #dbe8ff, transparent)" }}
       />
       <div
-        className="absolute -top-32 right-0 w-[520px] h-[520px] rounded-full blur-3xl opacity-60 pointer-events-none"
+        aria-hidden
+        className="absolute -top-28 -right-24 w-[420px] h-[420px] rounded-full blur-3xl opacity-40 pointer-events-none"
         style={{ background: "radial-gradient(closest-side, #e9d5ff, transparent)" }}
       />
-      <div
-        className="absolute top-40 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full blur-3xl opacity-50 pointer-events-none"
-        style={{ background: "radial-gradient(closest-side, #dcfce7, transparent)" }}
-      />
 
-      <div className="relative max-w-5xl mx-auto px-8 pt-20 pb-16 text-center">
+      <div className="relative max-w-5xl mx-auto px-8 pt-20 pb-14 text-center">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full
-                     bg-white/70 backdrop-blur-xs border border-ink-100
+                     bg-white border border-ink-100
                      text-xs text-ink-700 shadow-soft"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-mint-500" />
@@ -39,7 +37,7 @@ export default function Hero() {
         >
           AI Technical Documentation
           <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-500 via-lavender-500 to-brand-400">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-700 via-lavender-500 to-brand-600">
             Assistant
           </span>
         </motion.h1>
@@ -48,7 +46,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.12 }}
-          className="mt-5 text-lg md:text-xl text-ink-500 max-w-2xl mx-auto leading-relaxed"
+          className="mt-6 text-lg md:text-xl text-ink-700 max-w-2xl mx-auto leading-relaxed"
         >
           Generate, understand, and enhance technical knowledge instantly —
           grounded in your own sources, with citations, confidence scoring,
@@ -59,22 +57,27 @@ export default function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.2 }}
-          className="mt-8 flex items-center justify-center gap-3"
+          className="mt-9 flex items-center justify-center gap-3 flex-wrap"
         >
           <Link
             to="/chat"
-            className="px-6 py-3 rounded-full text-white text-sm font-medium
-                       bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500
-                       shadow-soft transition"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full
+                       text-white text-sm font-semibold
+                       bg-brand-600 hover:bg-brand-700
+                       shadow-lift transition-colors"
           >
             Start Chatting
+            <span aria-hidden>→</span>
           </Link>
           <Link
             to="/agent"
-            className="px-6 py-3 rounded-full text-ink-900 text-sm font-medium
-                       bg-white/70 backdrop-blur-xs border border-ink-100 hover:bg-white transition"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full
+                       text-ink-900 text-sm font-semibold
+                       bg-white border border-ink-200 hover:border-brand-300 hover:text-brand-700
+                       shadow-soft transition-colors"
           >
-            Try the Research Agent →
+            Try the Research Agent
+            <span aria-hidden>→</span>
           </Link>
         </motion.div>
 
@@ -82,7 +85,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-14 flex items-center justify-center gap-8 text-xs text-ink-500"
+          className="mt-14 flex items-center justify-center gap-2 md:gap-3 flex-wrap text-xs text-ink-700"
         >
           <Pill>RAG · FAISS</Pill>
           <Pill>Citations + Confidence</Pill>
@@ -96,7 +99,7 @@ export default function Hero() {
 
 function Pill({ children }) {
   return (
-    <span className="px-3 py-1 rounded-full bg-white/70 backdrop-blur-xs border border-ink-100">
+    <span className="px-3 py-1 rounded-full bg-white border border-ink-100 shadow-soft">
       {children}
     </span>
   );
