@@ -20,26 +20,8 @@ from fastapi.responses import StreamingResponse
 from app.core.metrics import get_metrics
 from app.schemas import ResearchRequest, ResearchResponse, ResearchSummary
 from app.services.agent import ResearchConfig, research
-from app.services.search import search_web
 
 router = APIRouter(tags=["agent"])
-
-
-@router.get("/agent/debug-search")
-def debug_search(q: str = Query(..., min_length=1, max_length=200)) -> dict:
-    """Quick diagnostic: run a DuckDuckGo search directly and return the
-    raw result list. Useful when the deployed environment produces zero
-    results and you want to tell a network problem from a parser problem.
-    """
-    results = search_web(q, max_results=6)
-    return {
-        "query": q,
-        "count": len(results),
-        "results": [
-            {"url": r.url, "title": r.title, "snippet": r.snippet[:200]}
-            for r in results
-        ],
-    }
 
 
 @router.post("/agent/research", response_model=ResearchResponse)
