@@ -41,6 +41,11 @@ services:
         value: /opt/render/project/.cache/ms-playwright
       - key: OPENAI_API_KEY
         sync: false          # user sets this in the Render dashboard
+      - key: TAVILY_API_KEY
+        # OPTIONAL last-resort search fallback. Used only when the
+        # headless-Chromium Brave path hits a captcha. Free tier at
+        # https://tavily.com (1000 searches/month).
+        sync: false
       - key: OPENAI_CHAT_MODEL
         value: gpt-4o-mini
       - key: OPENAI_EMBED_MODEL

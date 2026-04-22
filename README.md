@@ -383,6 +383,14 @@ A [Render Blueprint](https://render.com/docs/blueprint-spec) lives at
    - `OPENAI_API_KEY` — optional; without it the service runs in stub
      mode (embeddings are deterministic pseudo-vectors, LLM output is
      templated, but the UI and pipeline still work end-to-end).
+   - `TAVILY_API_KEY` — **optional fallback** for the Research Agent.
+     The primary search path uses headless Chromium + Brave Search,
+     which works out-of-the-box but can get rate-limited by Brave's
+     PoW captcha after a burst of queries. Setting Tavily gives the
+     agent a keyed, rate-limit-proof fallback. Free tier at
+     <https://tavily.com> (1000 searches/month). When the Brave path
+     hits a captcha, the code cools down the headless path for 5 min
+     and falls through to Tavily automatically.
 5. Wait for the first deploy (~3 min). Copy the service URL.
 6. Smoke test: `curl https://<your-render-url>/api/health` → should
    return JSON with `"status": "ok"`.

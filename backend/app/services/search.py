@@ -1,43 +1,40 @@
-"""Web search — Brave Search via headless Chromium, DDG HTTP fallback.
+"""Web search — three-tier fallback.
 
-Why this file is the way it is:
+Strategy, in order (first one to return results wins):
+    1. Fast HTTP path: DDG `/html/`. Works from home IPs; returns 0
+       from cloud datacenter IPs.
+    2. Headless Chromium (Playwright) driving Brave Search. Works
+       from cloud IPs until Brave serves a PoW captcha challenge.
+    3. Tavily API (only if `TAVILY_API_KEY` is set). 1000-free-
+       searches-per-month keyed service, purpose-built for AI agents,
+       no IP heuristics. Used only as a last resort when (1) and (2)
+       both return 0.
 
-DuckDuckGo aggressively blocks cloud-datacenter IPs. `/html/` returns
-a stub; the SPA redirects to a `static-pages/418.html` bot page; even
-Playwright doesn't get through. Brave Search (`search.brave.com`) is
-tool-friendly and returns a clean parseable SPA when driven by
-Playwright.
+Concurrency notes for the Playwright path:
 
-Concurrency is the subtle part. Playwright's SYNC API is locked to the
-thread that called `sync_playwright().start()` — touching it from any
-other thread raises "cannot switch to a different thread (which happens
-to have exited)". FastAPI/Starlette dispatches sync routes on a thread
-pool whose workers come and go, so a naive `global browser` breaks on
-the second request.
+Playwright's SYNC API is locked to the thread that called
+`sync_playwright().start()`. FastAPI runs sync routes on a thread pool
+whose workers come and go, so a naive `global browser` breaks on the
+second request ("cannot switch to a different thread"). We run
+Playwright in a dedicated daemon worker thread that owns the browser
+for the life of the process. Request threads submit jobs via
+`queue.Queue` and block on per-job reply queues. The browser never
+crosses threads.
 
-Solution: a dedicated **worker thread** owns Playwright for the life
-of the process. Request threads submit `Job`s to an inbound queue and
-block on a per-job reply queue. The browser never crosses threads.
-
-Strategy:
-    1. Fast path: plain HTTP to DDG `/html/` (works from home IPs).
-    2. On zero results, hand the query to the Playwright worker
-       thread, which opens a new browser context per job on Brave.
-
-Engineering notes:
-    - Worker thread is daemon=True; it dies with the process.
-    - If the worker thread dies or errors at startup, `_ensure_worker`
-      restarts it on the next request.
-    - Chromium args tuned for Render's 512 MB free tier.
-    - If Playwright isn't installed (local dev without install), the
-      headless path silently returns [] — tests and local dev are
-      unaffected.
+Brave captcha avoidance:
+    - One persistent browser context + page reused across queries
+      (looks like one long user session rather than many fresh ones).
+    - 700 ms throttle between consecutive queries.
+    - On captcha detection, we set a cooldown so the next ~5 minutes
+      of searches skip Brave entirely and fall straight through to
+      Tavily, avoiding a pointless 12 s timeout per request.
 """
 from __future__ import annotations
 
 import queue
 import re
 import threading
+import time
 from dataclasses import dataclass
 from typing import Iterable, Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
@@ -52,6 +49,11 @@ logger = get_logger(__name__)
 
 _DDG_HTML_URL = "https://html.duckduckgo.com/html/"
 _BRAVE_SEARCH_URL = "https://search.brave.com/search"
+_TAVILY_URL = "https://api.tavily.com/search"
+
+# When Brave serves a CAPTCHA, skip the headless path for this long so
+# we don't burn 12 s of timeout on every request.
+_BRAVE_COOLDOWN_SECONDS = 300  # 5 minutes
 
 _UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -406,28 +408,124 @@ def shutdown_playwright() -> None:
         t.join(timeout=5)
 
 
+# ─────────────────────────── Tavily API (last-resort) ───────────────────────────
+
+
+def _tavily_search(query: str, max_results: int) -> list[SearchResult]:
+    """Keyed fallback. Returns [] if TAVILY_API_KEY is unset or the
+    request fails. Never raises."""
+    s = get_settings()
+    if not s.tavily_api_key:
+        return []
+    try:
+        resp = requests.post(
+            _TAVILY_URL,
+            json={
+                "api_key": s.tavily_api_key,
+                "query": query,
+                "max_results": max_results,
+                "search_depth": "basic",
+                "include_answer": False,
+            },
+            timeout=s.request_timeout,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        logger.warning("Tavily search failed for %r: %s", query, e)
+        return []
+
+    try:
+        data = resp.json()
+    except ValueError:
+        logger.warning("Tavily returned non-JSON for %r", query)
+        return []
+
+    results: list[SearchResult] = []
+    seen: set[str] = set()
+    for item in data.get("results", []):
+        url = (item.get("url") or "").strip()
+        if not url or url in seen or is_blacklisted(url):
+            continue
+        seen.add(url)
+        results.append(
+            SearchResult(
+                url=url,
+                title=(item.get("title") or "").strip()[:200],
+                snippet=(item.get("content") or "").strip()[:400],
+            )
+        )
+        if len(results) >= max_results:
+            break
+    return results
+
+
 # ─────────────────────────── Public entry ───────────────────────────
+
+# State shared with the worker to short-circuit captcha-cooldown.
+_brave_skip_until: float = 0.0
+_brave_skip_lock = threading.Lock()
+
+
+def _brave_is_cooling_down() -> bool:
+    with _brave_skip_lock:
+        return time.time() < _brave_skip_until
+
+
+def _mark_brave_cooldown(reason: str) -> None:
+    global _brave_skip_until
+    with _brave_skip_lock:
+        _brave_skip_until = time.time() + _BRAVE_COOLDOWN_SECONDS
+    logger.info(
+        "Brave cooldown engaged (%s) — skipping headless path for %ds",
+        reason, _BRAVE_COOLDOWN_SECONDS,
+    )
+
+
+def _clear_brave_cooldown() -> None:
+    global _brave_skip_until
+    with _brave_skip_lock:
+        _brave_skip_until = 0.0
 
 
 def search_web(query: str, max_results: int = 6) -> list[SearchResult]:
-    """Query the best available backend. Never raises."""
+    """Query the best available backend. Never raises.
+
+    Chain:
+        1. DDG HTTP  (fast, no browser, usually 0 from cloud IPs)
+        2. Brave via Playwright  (skipped during captcha cooldown)
+        3. Tavily API            (only if TAVILY_API_KEY is set)
+    """
     if not query or not query.strip():
         return []
     q = query.strip()
 
-    # 1. Fast HTTP path via DDG (works on a home IP; skips Chromium).
+    # 1. Fast HTTP path via DDG.
     results = _ddg_http_search(q, max_results)
     if results:
         logger.info("Search %r → %d results (ddg-http)", q, len(results))
         return results
 
-    # 2. Headless Brave via the dedicated worker thread.
-    results = _brave_worker_search(q, max_results)
-    if results:
-        logger.info("Search %r → %d results (brave-headless)", q, len(results))
+    # 2. Headless Brave (unless we're in a captcha cooldown).
+    if _brave_is_cooling_down():
+        logger.info("Search %r: skipping Brave (cooldown); going to Tavily", q)
     else:
-        logger.warning("Search %r → 0 results from all backends", q)
-    return results
+        results = _brave_worker_search(q, max_results)
+        if results:
+            logger.info("Search %r → %d results (brave-headless)", q, len(results))
+            _clear_brave_cooldown()  # good run resets the cooldown
+            return results
+        # Brave returned 0 — very likely a captcha, flag a cooldown so
+        # subsequent calls don't burn 12 s each on another timeout.
+        _mark_brave_cooldown("Brave returned 0 results")
+
+    # 3. Tavily fallback (keyed).
+    results = _tavily_search(q, max_results)
+    if results:
+        logger.info("Search %r → %d results (tavily)", q, len(results))
+        return results
+
+    logger.warning("Search %r → 0 results from all backends", q)
+    return []
 
 
 def dedupe_urls(results: Iterable[SearchResult], seen: set[str]) -> list[SearchResult]:

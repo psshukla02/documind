@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     openai_chat_model: str = "gpt-4o-mini"
     openai_embed_model: str = "text-embedding-3-small"
 
+    # Optional: Tavily Search API key. Used ONLY as a last-resort fallback
+    # when the headless-Chromium Brave path returns no results (usually
+    # because Brave is serving a PoW captcha). Get a free key at
+    # https://tavily.com (1000 searches/month).
+    tavily_api_key: str = ""
+
     vector_store_path: str = "./data/vector_store"
     chunk_size: int = 800
     chunk_overlap: int = 120
