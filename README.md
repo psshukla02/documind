@@ -30,8 +30,9 @@ doc generation, synthetic-data diversity, and the metrics dashboard.
 7. [Example Queries](#example-queries)
 8. [Example Outputs](#example-outputs)
 9. [Project Structure](#project-structure)
-10. [Evaluation Metrics](#evaluation-metrics)
-11. [License](#license)
+10. [Deployment](#deployment)
+11. [Evaluation Metrics](#evaluation-metrics)
+12. [License](#license)
 
 ---
 
@@ -356,6 +357,72 @@ Final_Project/
 ├── website/               # project landing page (static HTML)
 └── README.md
 ```
+
+---
+
+## Deployment
+
+Target topology:
+
+| Piece     | Host                | URL (example)                                      |
+|-----------|---------------------|----------------------------------------------------|
+| Backend   | Render (free)       | `https://documind-backend.onrender.com`            |
+| Frontend  | GitHub Pages        | `https://psshukla02.github.io/documind/`           |
+
+### Backend → Render
+
+A [Render Blueprint](https://render.com/docs/blueprint-spec) lives at
+`render.yaml` in the repo root. One-time setup:
+
+1. Sign in to [render.com](https://render.com) and click
+   **New → Blueprint**.
+2. Connect your GitHub and select the `documind` repo.
+3. Render auto-detects `render.yaml`, shows the service preview, click
+   **Apply**.
+4. On the service's **Environment** tab, add:
+   - `OPENAI_API_KEY` — optional; without it the service runs in stub
+     mode (embeddings are deterministic pseudo-vectors, LLM output is
+     templated, but the UI and pipeline still work end-to-end).
+5. Wait for the first deploy (~3 min). Copy the service URL.
+6. Smoke test: `curl https://<your-render-url>/api/health` → should
+   return JSON with `"status": "ok"`.
+
+Free-tier caveat: the service spins down after ~15 min of idle time;
+the first request after that takes 30–60 s to wake it up. Also, the
+local disk is ephemeral — FAISS index is wiped on redeploy. The
+Research Agent rebuilds the knowledge base in ~10 s from a topic.
+
+### Frontend → GitHub Pages
+
+GitHub Actions workflow lives at
+`.github/workflows/deploy-frontend.yml`. One-time setup:
+
+1. Repo **Settings → Pages → Source: GitHub Actions**.
+2. Repo **Settings → Secrets and variables → Actions → Variables**
+   → **New repository variable**:
+   - Name: `VITE_API_BASE`
+   - Value: `https://<your-render-url>/api` *(include the `/api` suffix)*
+3. Push to `main` (or open Actions → *Deploy Frontend to GitHub Pages*
+   → **Run workflow**).
+4. First run takes ~1 min. Site becomes live at
+   `https://<your-username>.github.io/documind/`.
+
+The app uses `HashRouter`, so deep-links look like
+`/documind/#/chat` — works without any server-side fallback.
+
+### Updating CORS
+
+`render.yaml` sets `CORS_ORIGINS=https://psshukla02.github.io,http://localhost:5173`.
+If your GitHub username or repo name differs, update that env var in
+the Render dashboard (Environment tab) and re-deploy — or edit
+`render.yaml` and let Render re-apply the blueprint.
+
+### Custom domain (optional)
+
+- **Frontend**: add a `CNAME` file to `frontend/public/` and set
+  `VITE_BASE=/` so assets load from the root.
+- **Backend**: Render's dashboard → Custom Domains → add your domain
+  and update `CORS_ORIGINS` accordingly.
 
 ---
 

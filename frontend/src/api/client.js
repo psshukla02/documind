@@ -1,9 +1,14 @@
-// Thin fetch wrapper. Uses /api prefix (proxied to FastAPI in dev via Vite).
+// Thin fetch wrapper.
+//
+// Dev: VITE_API_BASE is unset → uses /api, which Vite proxies to the
+//      local FastAPI on :8000.
+// Prod: VITE_API_BASE is e.g. "https://documind-backend.onrender.com/api",
+//       so the bundled frontend talks to the Render service directly.
 
-const BASE = "/api";
+export const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 async function request(path, { method = "GET", body, signal } = {}) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,

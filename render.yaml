@@ -1,0 +1,49 @@
+# Render Blueprint for the DocuMind backend.
+# Deploy via: https://render.com → New → Blueprint → connect repo.
+#
+# After deploy:
+#   1. Open the service → Environment → add OPENAI_API_KEY (optional; stub
+#      mode works without it).
+#   2. If the GitHub Pages URL differs from the default below, update
+#      CORS_ORIGINS to include it.
+#
+# Free-tier caveats:
+#   - Instance spins down after ~15 min idle; first request takes 30-60s
+#     to wake.
+#   - Local filesystem is ephemeral (FAISS index resets on redeploy).
+#     The Research Agent can rebuild the KB in ~10s from a topic.
+
+services:
+  - type: web
+    name: documind-backend
+    runtime: python
+    region: oregon          # closest US region; adjust if you prefer
+    plan: free
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: OPENAI_API_KEY
+        sync: false          # user sets this in the Render dashboard
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_EMBED_MODEL
+        value: text-embedding-3-small
+      - key: CHUNK_SIZE
+        value: "800"
+      - key: CHUNK_OVERLAP
+        value: "120"
+      - key: TOP_K
+        value: "4"
+      - key: REQUEST_TIMEOUT
+        value: "30"
+      - key: VECTOR_STORE_PATH
+        value: /tmp/vector_store
+      - key: CORS_ORIGINS
+        # Comma-separated list of allowed frontend origins.
+        # Includes the GitHub Pages URL for the deployed frontend and
+        # localhost for ad-hoc manual testing.
+        value: https://psshukla02.github.io,http://localhost:5173

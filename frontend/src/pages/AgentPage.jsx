@@ -7,6 +7,7 @@ import Button from "../components/Button.jsx";
 import Spinner from "../components/Spinner.jsx";
 import { Card, CardBody, CardHeader, SectionLabel } from "../components/Card.jsx";
 import { Input } from "../components/Input.jsx";
+import { API_BASE } from "../api/client.js";
 
 const EVENT_STYLE = {
   start:          { color: "text-ink-900",  dot: "bg-ink-300" },
@@ -203,7 +204,7 @@ export default function AgentPage() {
     setRunning(true);
     esRef.current?.close();
 
-    const url = `/api/agent/stream?topic=${encodeURIComponent(t)}&num_queries=${numQueries}&per_query=${perQuery}`;
+    const url = `${API_BASE}/agent/stream?topic=${encodeURIComponent(t)}&num_queries=${numQueries}&per_query=${perQuery}`;
     const es = new EventSource(url);
     esRef.current = es;
 
