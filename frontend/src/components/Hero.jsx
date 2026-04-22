@@ -37,7 +37,9 @@ export default function Hero() {
         >
           AI Technical Documentation
           <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-700 via-lavender-500 to-brand-600">
+          <span className="inline-block bg-clip-text text-transparent bg-gradient-to-r
+                           from-indigo-600 via-fuchsia-500 to-rose-500
+                           pb-2 -mb-2">
             Assistant
           </span>
         </motion.h1>
