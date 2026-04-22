@@ -27,18 +27,58 @@ router = APIRouter(tags=["agent"])
 
 @router.get("/agent/debug-search")
 def debug_search(q: str = Query(..., min_length=1, max_length=200)) -> dict:
-    """Quick diagnostic: run a DuckDuckGo search directly and return the
-    raw result list. Useful when the deployed environment produces zero
-    results and you want to tell a network problem from a parser problem.
+    """Diagnostic: probe every search backend and return per-backend status
+    so you can tell what's failing in a deployed environment (blocked IP
+    vs. parser drift vs. auth missing).
     """
-    results = search_web(q, max_results=6)
+    from app.core.config import get_settings
+    from app.services.search import (
+        DDG_BACKENDS, _fetch, tavily_search, search_web,
+    )
+
+    settings = get_settings()
+    attempts: list[dict] = []
+
+    # Tavily
+    if settings.tavily_api_key:
+        try:
+            t_results = tavily_search(q, max_results=6)
+            attempts.append({
+                "provider": "tavily",
+                "count": len(t_results),
+                "urls": [r.url for r in t_results[:3]],
+            })
+        except Exception as e:
+            attempts.append({"provider": "tavily", "error": str(e)})
+    else:
+        attempts.append({"provider": "tavily", "skipped": "TAVILY_API_KEY not set"})
+
+    # DDG backends
+    for url, variant, parser in DDG_BACKENDS:
+        resp = _fetch(url, q, settings.request_timeout)
+        if resp is None:
+            attempts.append({"provider": f"ddg-{variant}", "error": "network_error"})
+            continue
+        body = resp.text or ""
+        parsed = parser(body, 6)
+        attempts.append({
+            "provider": f"ddg-{variant}",
+            "status": resp.status_code,
+            "body_len": len(body),
+            "body_head": body[:300].replace("\n", " ").strip(),
+            "count": len(parsed),
+            "urls": [r.url for r in parsed[:3]],
+        })
+
+    final = search_web(q, max_results=6)
     return {
         "query": q,
-        "count": len(results),
-        "results": [
+        "final_count": len(final),
+        "final_results": [
             {"url": r.url, "title": r.title, "snippet": r.snippet[:200]}
-            for r in results
+            for r in final
         ],
+        "attempts": attempts,
     }
 
 

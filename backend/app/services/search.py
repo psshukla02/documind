@@ -1,17 +1,19 @@
-"""Web search — DuckDuckGo with Lite + HTML fallbacks.
+"""Web search — Tavily (preferred on cloud hosts) + DuckDuckGo fallbacks.
 
-DDG's `html.duckduckgo.com` endpoint serves datacenter IPs (like Render's)
-a stripped-down / captcha-gated page, so scraping often returns zero
-results in production even though it works locally.
+Backends, tried in order:
+    1. Tavily API — https://tavily.com — if `TAVILY_API_KEY` is set.
+       Cloud-IP friendly, purpose-built for AI agents, free tier is
+       1000 searches/month.
+    2. DuckDuckGo Lite — `lite.duckduckgo.com/lite/`.
+    3. DuckDuckGo HTML — `html.duckduckgo.com/html/`.
 
-Strategy:
-    1. Try `lite.duckduckgo.com/lite/` — a text-browser layout that is
-       significantly bot-friendlier and stable across cloud IPs.
-    2. Fall back to `html.duckduckgo.com/html/` if Lite yields nothing.
-    3. Log the response size and head on empty results so we can tell
-       "DDG gave us a different page" apart from "our parser missed".
+DDG serves datacenter IPs (e.g. Render, Fly, Vercel serverless) either a
+stripped-down captcha page or a zero-result shell. Tavily works reliably
+from everywhere, at the cost of requiring a free API key.
 
-No API key required.
+If all backends return empty, we log the response status + first bytes of
+the body so the failure mode is visible from the dashboard log tail and
+from the `GET /api/agent/debug-search` diagnostic endpoint.
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+_TAVILY_URL = "https://api.tavily.com/search"
 _DDG_LITE_URL = "https://lite.duckduckgo.com/lite/"
 _DDG_HTML_URL = "https://html.duckduckgo.com/html/"
 
@@ -41,7 +44,6 @@ _HEADERS = {
     "Referer": "https://duckduckgo.com/",
 }
 
-# Domains/extensions that either block scraping or contain no useful text.
 _BLACKLIST_HOSTS = {
     "youtube.com", "www.youtube.com", "youtu.be",
     "vimeo.com", "tiktok.com",
@@ -50,7 +52,7 @@ _BLACKLIST_HOSTS = {
     "instagram.com", "www.instagram.com",
     "linkedin.com", "www.linkedin.com",
     "pinterest.com", "reddit.com",
-    "duckduckgo.com",  # self-links from the search page itself
+    "duckduckgo.com",
 }
 _BLACKLIST_EXT = re.compile(
     r"\.(pdf|zip|ppt|pptx|doc|docx|xls|xlsx|mp4|mp3|mov|avi)(\?|$)", re.I
@@ -77,7 +79,6 @@ def is_blacklisted(url: str) -> bool:
 
 
 def _unwrap_ddg(href: str) -> str:
-    """DDG wraps outbound links — unwrap to the real target URL."""
     if href.startswith("//"):
         href = "https:" + href
     if "duckduckgo.com/l/" in href or href.startswith("/l/"):
@@ -88,8 +89,62 @@ def _unwrap_ddg(href: str) -> str:
     return href
 
 
+# ─────────────────────────── Tavily ───────────────────────────
+
+
+def tavily_search(query: str, max_results: int = 6) -> list[SearchResult]:
+    """Call Tavily Search API. Returns [] if the API key is missing or the
+    request fails. Never raises — the caller will try fallbacks."""
+    s = get_settings()
+    if not s.tavily_api_key:
+        return []
+    try:
+        resp = requests.post(
+            _TAVILY_URL,
+            json={
+                "api_key": s.tavily_api_key,
+                "query": query,
+                "max_results": max_results,
+                "search_depth": "basic",
+                "include_answer": False,
+            },
+            timeout=s.request_timeout,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        logger.warning("Tavily search failed for %r: %s", query, e)
+        return []
+
+    try:
+        data = resp.json()
+    except ValueError:
+        logger.warning("Tavily returned non-JSON for %r", query)
+        return []
+
+    results: list[SearchResult] = []
+    seen: set[str] = set()
+    for item in data.get("results", []):
+        url = (item.get("url") or "").strip()
+        if not url or url in seen or is_blacklisted(url):
+            continue
+        seen.add(url)
+        results.append(
+            SearchResult(
+                url=url,
+                title=(item.get("title") or "").strip(),
+                snippet=(item.get("content") or "").strip()[:300],
+            )
+        )
+        if len(results) >= max_results:
+            break
+    logger.info("Tavily %r → %d results", query, len(results))
+    return results
+
+
+# ─────────────────────────── DuckDuckGo ───────────────────────────
+
+
 def _fetch(url: str, query: str, timeout: int) -> requests.Response | None:
-    """POST the query to `url`. Returns None on network failure."""
     try:
         resp = requests.post(
             url,
@@ -106,12 +161,6 @@ def _fetch(url: str, query: str, timeout: int) -> requests.Response | None:
 
 
 def _parse_lite(html: str, max_results: int) -> list[SearchResult]:
-    """Parse `lite.duckduckgo.com/lite/` output.
-
-    Structure (simplified):
-        <tr><td>1.</td><td><a rel="nofollow" href="...">Title</a></td></tr>
-        <tr><td></td><td class="result-snippet">snippet...</td></tr>
-    """
     soup = BeautifulSoup(html, "lxml")
     results: list[SearchResult] = []
     seen: set[str] = set()
@@ -128,7 +177,6 @@ def _parse_lite(html: str, max_results: int) -> list[SearchResult]:
         if not title or len(title) < 2:
             continue
 
-        # Snippet lives in the next <tr> sibling's td.result-snippet
         snippet = ""
         parent_tr = a.find_parent("tr")
         if parent_tr:
@@ -142,17 +190,14 @@ def _parse_lite(html: str, max_results: int) -> list[SearchResult]:
         results.append(SearchResult(url=url, title=title, snippet=snippet))
         if len(results) >= max_results:
             break
-
     return results
 
 
 def _parse_html(html: str, max_results: int) -> list[SearchResult]:
-    """Parse the classic `html.duckduckgo.com/html/` output."""
     soup = BeautifulSoup(html, "lxml")
     results: list[SearchResult] = []
     seen: set[str] = set()
 
-    # DDG sometimes changes the container class; try multiple selectors.
     nodes = soup.select("div.result, div.result__body, div.results_links")
     for node in nodes:
         a = node.select_one("a.result__a") or node.select_one("a[href]")
@@ -175,25 +220,33 @@ def _parse_html(html: str, max_results: int) -> list[SearchResult]:
         seen.add(url)
         if len(results) >= max_results:
             break
-
     return results
 
 
-_BACKENDS: list[tuple[str, str, Callable[[str, int], list[SearchResult]]]] = [
+DDG_BACKENDS: list[tuple[str, str, Callable[[str, int], list[SearchResult]]]] = [
     (_DDG_LITE_URL, "lite", _parse_lite),
     (_DDG_HTML_URL, "html", _parse_html),
 ]
 
 
+# ─────────────────────────── Public entry ───────────────────────────
+
+
 def search_web(query: str, max_results: int = 6) -> list[SearchResult]:
-    """Query DuckDuckGo and return clean results. Network-bound."""
+    """Query the best available backend and return clean results."""
     if not query or not query.strip():
         return []
 
     q = query.strip()
-    timeout = get_settings().request_timeout
 
-    for url, variant, parser in _BACKENDS:
+    # 1. Tavily if configured — reliable from cloud IPs.
+    results = tavily_search(q, max_results)
+    if results:
+        return results
+
+    # 2. DuckDuckGo fallbacks.
+    timeout = get_settings().request_timeout
+    for url, variant, parser in DDG_BACKENDS:
         resp = _fetch(url, q, timeout)
         if resp is None:
             continue
@@ -202,11 +255,9 @@ def search_web(query: str, max_results: int = 6) -> list[SearchResult]:
         results = parser(body, max_results)
 
         if results:
-            logger.info("Search %r → %d results via %s", q, len(results), variant)
+            logger.info("Search %r → %d results via ddg-%s", q, len(results), variant)
             return results
 
-        # Empty result — log diagnostic info so we can tell if DDG served
-        # a captcha, an empty page, or something our parser missed.
         head = body[:200].replace("\n", " ").strip()
         logger.warning(
             "DDG %s returned 0 results for %r (len=%d, status=%d, head=%r)",
