@@ -37,9 +37,17 @@ export default function Hero() {
         >
           AI Technical Documentation
           <br />
-          <span className="inline-block bg-clip-text text-transparent bg-gradient-to-r
-                           from-indigo-600 via-fuchsia-500 to-rose-500
-                           pb-2 -mb-2">
+          <span
+            className="inline-block pb-2 -mb-2"
+            style={{
+              backgroundImage:
+                "linear-gradient(95deg, #1d4ed8 0%, #7c3aed 45%, #db2777 100%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
             Assistant
           </span>
         </motion.h1>
