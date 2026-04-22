@@ -4,10 +4,18 @@ A production-quality, end-to-end Generative AI web application for developers.
 It combines **Retrieval-Augmented Generation (RAG)**, **Synthetic Data
 Generation**, and **structured Prompt Engineering** to help developers generate,
 improve, and query technical documentation — with inline citations and
-confidence scoring.
+confidence scoring. It also ships a **beyond-scope Autonomous Research Agent**
+that grows its own knowledge base from a topic alone.
 
 > Built for a university Generative AI final project. Real code, real
 > dependencies, real endpoints — no pseudo-implementations.
+
+### 🎬 Demo Video
+
+**10-minute walkthrough:** <https://youtu.be/HR--Zm4KlT0>
+
+Covers live ingestion, chat with citations, research-agent SSE streaming,
+doc generation, synthetic-data diversity, and the metrics dashboard.
 
 ---
 

@@ -31,8 +31,12 @@ BUILD.mkdir(exist_ok=True)
 MERGED = BUILD / "_merged.md"
 
 # Order chosen to match the rubric's required section order.
-SECTIONS: list[tuple[str, str]] = [
-    ("_cover.md",        None),                         # cover + TOC intro
+# Second tuple element is None for cover + rubric (they own their headings).
+# For the other files, the leading `# H1` is stripped from the source during
+# merge and the injected H1 below is used instead — prevents duplicated titles.
+SECTIONS: list[tuple[str, str | None]] = [
+    ("_cover.md",        None),
+    ("_requirements.md", None),
     ("architecture.md",  "System Architecture"),
     ("implementation.md","Implementation Details"),
     ("agent.md",         "Autonomous Research Agent"),
@@ -41,6 +45,8 @@ SECTIONS: list[tuple[str, str]] = [
     ("ethics.md",        "Ethical Considerations"),
     ("future_work.md",   "Future Improvements"),
 ]
+
+_LEADING_H1 = re.compile(r"^\s*#\s+[^\n]*\n+")
 
 _MERMAID_BLOCK = re.compile(
     r"```mermaid\s*\n(?P<body>.*?)\n```",
@@ -144,13 +150,16 @@ def merge() -> Path:
         text = src.read_text(encoding="utf-8")
         text = preprocess(text)
 
-        # Cover page already has its own YAML front-matter + headings.
-        if filename == "_cover.md":
+        # Files that carry their own YAML front-matter / H1 (cover page,
+        # requirements summary) are emitted as-is.
+        if h1_title is None:
             parts.append(text)
             continue
 
-        # Prepend a page break + H1 so each section starts cleanly.
-        header = f"\n\\clearpage\n\n# {h1_title}\n\n" if h1_title else ""
+        # For every other file, strip the leading "# Title" line so the
+        # injected section heading isn't duplicated.
+        text = _LEADING_H1.sub("", text, count=1)
+        header = f"\n\\clearpage\n\n# {h1_title}\n\n"
         parts.append(header + text + "\n")
 
     merged = "\n".join(parts)

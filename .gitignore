@@ -26,3 +26,10 @@ build/
 
 # Claude config
 .claude/
+
+# Recorded demo videos — too large for git (hosted on YouTube instead)
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi
