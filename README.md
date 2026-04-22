@@ -383,22 +383,9 @@ A [Render Blueprint](https://render.com/docs/blueprint-spec) lives at
    - `OPENAI_API_KEY` — optional; without it the service runs in stub
      mode (embeddings are deterministic pseudo-vectors, LLM output is
      templated, but the UI and pipeline still work end-to-end).
-   - `TAVILY_API_KEY` — **recommended** for the Research Agent.
-     DuckDuckGo blocks most cloud-datacenter IPs (Render, Vercel, etc.)
-     so web search fails in production without this. Free tier (1000
-     searches/month) is plenty: sign up at <https://tavily.com>, copy
-     the key. Without it, the Research Agent will silently return
-     zero results from hosted environments.
 5. Wait for the first deploy (~3 min). Copy the service URL.
 6. Smoke test: `curl https://<your-render-url>/api/health` → should
    return JSON with `"status": "ok"`.
-7. Search diagnostic (once `TAVILY_API_KEY` is set):
-   ```bash
-   curl "https://<your-render-url>/api/agent/debug-search?q=FastAPI"
-   ```
-   The response shows, per backend, how many results were returned
-   and the first bytes of any failing HTML. If `tavily` has a
-   non-zero count, the live Research Agent will work.
 
 Free-tier caveat: the service spins down after ~15 min of idle time;
 the first request after that takes 30–60 s to wake it up. Also, the

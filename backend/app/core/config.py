@@ -12,11 +12,6 @@ class Settings(BaseSettings):
     openai_chat_model: str = "gpt-4o-mini"
     openai_embed_model: str = "text-embedding-3-small"
 
-    # Optional: Tavily Search API key. When set, the research agent uses
-    # Tavily as its primary search backend (reliable from cloud IPs where
-    # DuckDuckGo is often blocked). Grab a free key at https://tavily.com/.
-    tavily_api_key: str = ""
-
     vector_store_path: str = "./data/vector_store"
     chunk_size: int = 800
     chunk_overlap: int = 120
