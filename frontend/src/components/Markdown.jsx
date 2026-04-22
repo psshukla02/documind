@@ -1,23 +1,17 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-/**
- * Markdown with inline [S#] citation pills. Post-processes the rendered text
- * nodes to replace bare [S1], [S2] sequences with a highlighted chip.
- */
+// Replace bare [S1], [S2] tokens in text nodes with a citation chip.
 function renderText(children) {
   if (typeof children === "string") {
     const parts = children.split(/(\[S\d+\])/g);
-    return parts.map((p, i) => {
-      if (/^\[S\d+\]$/.test(p)) {
-        return (
-          <span key={i} className="cite-chip">
-            {p}
-          </span>
-        );
-      }
-      return <span key={i}>{p}</span>;
-    });
+    return parts.map((p, i) =>
+      /^\[S\d+\]$/.test(p) ? (
+        <span key={i} className="cite-chip">{p}</span>
+      ) : (
+        <span key={i}>{p}</span>
+      )
+    );
   }
   return children;
 }
@@ -28,7 +22,7 @@ export default function Markdown({ children }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          p: ({ children }) => <p>{renderText(children)}</p>,
+          p:  ({ children }) => <p>{renderText(children)}</p>,
           li: ({ children }) => <li>{renderText(children)}</li>,
         }}
       >

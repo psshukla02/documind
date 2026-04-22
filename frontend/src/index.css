@@ -3,47 +3,140 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --canvas: #f7f8fa;
 }
 
-html,
-body,
-#root {
-  height: 100%;
+html, body, #root { height: 100%; }
+body {
+  background:
+    radial-gradient(1200px 600px at -10% -20%, rgba(196,181,253,0.18), transparent 60%),
+    radial-gradient(900px 500px at 110% -10%, rgba(122,167,255,0.18), transparent 60%),
+    var(--canvas);
+  color: #1d1d1f;
+  font-feature-settings: "ss01", "cv02", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
-/* Markdown body styling */
-.md h1 { @apply text-2xl font-semibold mt-3 mb-2; }
-.md h2 { @apply text-xl font-semibold mt-3 mb-2 text-brand-400; }
-.md h3 { @apply text-lg font-semibold mt-2 mb-1; }
-.md p  { @apply my-2 leading-relaxed text-slate-200; }
-.md ul { @apply list-disc list-inside my-2 space-y-1; }
-.md ol { @apply list-decimal list-inside my-2 space-y-1; }
-.md code {
-  @apply font-mono text-sm bg-ink-900 text-brand-400 px-1 py-0.5 rounded;
+/* ──────────────── Glass + surfaces ──────────────── */
+.glass {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border: 1px solid rgba(255,255,255,0.6);
 }
-.md pre {
-  @apply font-mono text-sm bg-ink-900 border border-ink-800 p-3 rounded-md overflow-x-auto my-2;
-}
-.md pre code {
-  @apply bg-transparent text-slate-100 p-0;
-}
-.md a { @apply text-brand-400 underline hover:text-brand-500; }
-.md table { @apply w-full text-sm my-3 border-collapse; }
-.md th, .md td { @apply border border-ink-800 px-2 py-1 text-left; }
 
-/* Citation pills */
+.surface {
+  background: #ffffff;
+  border: 1px solid #eef0f3;
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 8px 24px -12px rgba(16,24,40,0.08);
+}
+
+/* ──────────────── Citation chip ──────────────── */
 .cite-chip {
-  @apply inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded-full
-         bg-brand-600/20 text-brand-400 border border-brand-600/40
-         text-xs font-mono;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  height: 20px;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #eef4ff 0%, #dbe8ff 100%);
+  color: #1e55cc;
+  border: 1px solid #bfd4ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #0b1020; }
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
+/* ──────────────── Markdown body ──────────────── */
+.md { font-size: 15px; line-height: 1.65; color: #1d1d1f; }
+.md h1 { font-size: 1.5rem; font-weight: 700; margin: 0.8rem 0 0.5rem; letter-spacing: -0.02em; }
+.md h2 { font-size: 1.2rem; font-weight: 600; margin: 0.9rem 0 0.4rem; color: #2d6bf0; letter-spacing: -0.01em; }
+.md h3 { font-size: 1.05rem; font-weight: 600; margin: 0.7rem 0 0.3rem; color: #1d1d1f; }
+.md p  { margin: 0.5rem 0; color: #3d3d41; }
+.md ul, .md ol { margin: 0.5rem 0 0.5rem 1.25rem; }
+.md ul li { list-style: disc; }
+.md ol li { list-style: decimal; }
+.md li { margin: 0.2rem 0; color: #3d3d41; }
+
+.md code {
+  font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  background: #f3f4f7;
+  color: #1e55cc;
+  padding: 0.08em 0.35em;
   border-radius: 6px;
 }
-::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+.md pre {
+  font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: #f7f8fa;
+  border: 1px solid #eef0f3;
+  padding: 14px 16px;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin: 0.6rem 0;
+  color: #1d1d1f;
+}
+.md pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+
+.md a  { color: #2d6bf0; text-decoration: none; }
+.md a:hover { text-decoration: underline; }
+
+.md table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.9em; }
+.md th, .md td { border: 1px solid #eef0f3; padding: 8px 12px; text-align: left; }
+.md th { background: #f7f8fa; color: #1d1d1f; font-weight: 600; }
+
+.md blockquote {
+  border-left: 3px solid #bfd4ff;
+  padding: 0.3rem 0.9rem;
+  background: #f7f9ff;
+  border-radius: 0 10px 10px 0;
+  color: #3d3d41;
+  margin: 0.6rem 0;
+}
+
+/* ──────────────── Shimmer skeletons ──────────────── */
+.shimmer {
+  background: linear-gradient(90deg, #eef0f3 0%, #f7f8fa 50%, #eef0f3 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 12px;
+}
+
+/* ──────────────── Typing indicator ──────────────── */
+.typing { display: inline-flex; gap: 4px; padding: 10px 14px; align-items: center; }
+.typing span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #a5c0ff;
+  animation: blink 1.2s infinite ease-in-out;
+}
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+
+/* ──────────────── Scrollbar (thin, subtle) ──────────────── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #e5e5ea;
+  border-radius: 8px;
+  border: 2px solid #f7f8fa;
+}
+::-webkit-scrollbar-thumb:hover { background: #c7c7cc; }
+
+/* ──────────────── Focus ring, used on inputs/buttons ──────────────── */
+.ring-focus:focus, .ring-focus:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(122,167,255,0.22);
+  border-color: #7aa7ff;
+}
+
+/* Respect the "I prefer less motion" setting. */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

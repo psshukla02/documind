@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function CopyButton({ text, label = "Copy" }) {
   const [copied, setCopied] = useState(false);
@@ -6,17 +7,22 @@ export default function CopyButton({ text, label = "Copy" }) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), 1400);
     } catch {
       /* ignore */
     }
   };
   return (
-    <button
+    <motion.button
       onClick={onCopy}
-      className="text-xs px-2 py-1 rounded border border-ink-800 text-slate-300 hover:bg-ink-800"
+      whileTap={{ scale: 0.96 }}
+      className={[
+        "text-xs px-2.5 py-1 rounded-full",
+        "border border-ink-100 text-ink-700 bg-white/70",
+        "hover:bg-white hover:border-ink-200 transition",
+      ].join(" ")}
     >
       {copied ? "✓ Copied" : label}
-    </button>
+    </motion.button>
   );
 }
