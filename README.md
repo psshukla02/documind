@@ -21,10 +21,9 @@ confidence scoring.
 6. [API Usage](#api-usage)
 7. [Example Queries](#example-queries)
 8. [Example Outputs](#example-outputs)
-9. [Screenshots](#screenshots)
-10. [Project Structure](#project-structure)
-11. [Evaluation Metrics](#evaluation-metrics)
-12. [License](#license)
+9. [Project Structure](#project-structure)
+10. [Evaluation Metrics](#evaluation-metrics)
+11. [License](#license)
 
 ---
 
@@ -315,18 +314,6 @@ After ingestion, try:
   "difficulty": "medium"
 }
 ```
-
----
-
-## Screenshots
-
-*(Replace these placeholders with real screenshots after running locally.)*
-
-- `docs/screenshots/chat.png` — Chat page with citations and confidence
-- `docs/screenshots/kb.png` — Knowledge Base manager
-- `docs/screenshots/docs-gen.png` — Documentation generator
-- `docs/screenshots/synthetic.png` — Synthetic data viewer
-- `docs/screenshots/metrics.png` — Metrics dashboard
 
 ---
 
